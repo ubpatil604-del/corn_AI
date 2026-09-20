@@ -1,1 +1,15 @@
-             .venv/_pycache_/*.pyc
+.venv/
+__pycache__/
+*.pyc
+.vscode/
+
+# Datasets
+dataset/
+test data/
+corn_detector/
+
+# Trained models
+*.keras
+
+# Results
+results/
