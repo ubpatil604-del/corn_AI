@@ -10,6 +10,14 @@ corn_detector/
 
 # Trained models
 *.keras
+!/models/corn_detector.keras
+!/models/disease_model.keras
+
+# Candidate model artifacts are local until explicitly reviewed
+/models/*candidate*
+/models/corn_candidate_reference_embeddings.npy
 
 # Results
 results/
+outputs/*
+!outputs/.gitkeep
