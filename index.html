@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f8ef">
+  <meta name="description" content="A browser-side corn leaf image quality demo. Disease diagnosis is not performed.">
+  <title>Corn-AI | Image quality demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --green-950: #153923;
+      --green-800: #285738;
+      --green-600: #43814e;
+      --green-100: #e6f0df;
+      --ink: #22332a;
+      --muted: #637267;
+      --border: #dce7d8;
+      --paper: #ffffff;
+      --background: #f4f8ef;
+      --warning-bg: #fff7e7;
+      --warning-border: #e7ca83;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    .shell { width: min(1040px, calc(100% - 32px)); margin: 32px auto 56px; }
+    .hero {
+      padding: 30px clamp(20px, 5vw, 48px);
+      border-radius: 22px;
+      background: linear-gradient(120deg, var(--green-950), var(--green-600));
+      color: #fff;
+      box-shadow: 0 14px 36px #15392320;
+    }
+    .eyebrow { margin: 0 0 7px; color: #d7ead0; font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1.12; letter-spacing: -.035em; }
+    .hero p:last-child { max-width: 700px; margin: 13px 0 0; color: #edf6e8; }
+    .notice {
+      margin: 20px 0;
+      padding: 15px 18px;
+      border: 1px solid var(--warning-border);
+      border-radius: 14px;
+      background: var(--warning-bg);
+    }
+    .notice strong { color: #674c13; }
+    .notice p { margin: 4px 0 0; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(300px, .9fr); gap: 20px; align-items: start; }
+    .card {
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--paper);
+      box-shadow: 0 8px 24px #1d40210a;
+    }
+    h2 { margin: 0 0 6px; color: var(--green-950); font-size: 1.2rem; }
+    .subtle { margin: 0 0 16px; color: var(--muted); font-size: .94rem; }
+    .drop {
+      display: grid;
+      min-height: 160px;
+      place-items: center;
+      padding: 18px;
+      border: 2px dashed #adc4a7;
+      border-radius: 14px;
+      background: #fbfdf9;
+      text-align: center;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    .drop:hover, .drop:focus-within { border-color: var(--green-600); background: #f3f8ef; }
+    .drop strong { display: block; color: var(--green-800); }
+    .drop span { color: var(--muted); font-size: .88rem; }
+    input[type=file] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .preview-wrap { margin-top: 16px; }
+    .preview-wrap[hidden], .metrics[hidden], .warnings[hidden] { display: none; }
+    .preview { display: block; width: 100%; max-height: 430px; object-fit: contain; border-radius: 12px; background: #edf2e9; }
+    .filename { margin: 8px 0 0; color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
+    .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+    .metric { padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #fbfdf9; }
+    .metric span { display: block; color: var(--muted); font-size: .8rem; }
+    .metric strong { display: block; margin-top: 3px; color: var(--green-950); font-size: 1.12rem; font-variant-numeric: tabular-nums; }
+    .warnings { margin: 14px 0 0; padding-left: 21px; color: #684d15; }
+    .warnings li + li { margin-top: 5px; }
+    .good { margin: 14px 0 0; color: var(--green-800); font-weight: 650; }
+    .method { margin: 13px 0 0; color: var(--muted); font-size: .83rem; }
+    .class-list { display: grid; gap: 9px; margin: 14px 0 0; padding: 0; list-style: none; }
+    .class-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 11px; background: #fbfdf9; }
+    .tag { padding: 2px 8px; border-radius: 99px; background: var(--green-100); color: var(--green-800); font-size: .75rem; font-weight: 700; white-space: nowrap; }
+    .unavailable { background: #f1f2ef; color: #657066; }
+    .no-diagnosis { margin-top: 18px; padding: 13px 14px; border-radius: 12px; background: #f1f6ec; color: var(--green-950); font-size: .92rem; }
+    .footer { margin-top: 20px; color: var(--muted); font-size: .85rem; text-align: center; }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 22px, 560px); margin-top: 12px; }
+      .layout { grid-template-columns: 1fr; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <p class="eyebrow">Agriculture computer-vision project</p>
+      <h1>Corn-AI Leaf Health</h1>
+      <p>Check basic image quality in your browser and learn what the full local model supports.</p>
+    </header>
+
+    <section class="notice" aria-label="Important limitation">
+      <strong>Demo limitation — no disease diagnosis is performed here.</strong>
+      <p>This free static page does not run the TensorFlow models. It only previews your image and estimates basic image-quality indicators in your browser. No image is uploaded to a prediction server.</p>
+    </section>
+
+    <div class="layout">
+      <section class="card" aria-labelledby="quality-title">
+        <h2 id="quality-title">Image quality preview</h2>
+        <p class="subtle">Choose an image to see its dimensions, brightness, contrast, and an approximate blur indicator.</p>
+
+        <label class="drop" for="image-file">
+          <span>
+            <strong>Select a leaf image</strong>
+            JPG, PNG, or WEBP · processed locally in this browser
+          </span>
+        </label>
+        <input id="image-file" type="file" accept="image/jpeg,image/png,image/webp">
+
+        <div id="preview-wrap" class="preview-wrap" hidden>
+          <img id="preview" class="preview" alt="Preview of selected image">
+          <p id="filename" class="filename"></p>
+        </div>
+
+        <div id="metrics" class="metrics" aria-live="polite" hidden>
+          <div class="metric"><span>Image dimensions</span><strong id="dimensions">—</strong></div>
+          <div class="metric"><span>Mean brightness</span><strong id="brightness">—</strong></div>
+          <div class="metric"><span>Grayscale contrast</span><strong id="contrast">—</strong></div>
+          <div class="metric"><span>Laplacian variance · approx.</span><strong id="blur">—</strong></div>
+          <div class="metric"><span>Near-black/white pixels</span><strong id="clipping">—</strong></div>
+        </div>
+        <ul id="warnings" class="warnings" hidden></ul>
+        <p id="quality-good" class="good" hidden>No basic image-quality warnings detected.</p>
+        <p class="method">Blur and exposure checks are heuristic and depend on image scale, camera, and scene. A warning is not a diagnosis and does not block an image.</p>
+      </section>
+
+      <aside class="card" aria-labelledby="model-title">
+        <h2 id="model-title">Model capability</h2>
+        <p class="subtle">The local Python application uses real inference. This static demo does not.</p>
+        <ul class="class-list">
+          <li><span>Healthy corn leaf</span><span class="tag">Local model</span></li>
+          <li><span>Common rust</span><span class="tag">Local model</span></li>
+          <li><span>Gray leaf spot</span><span class="tag">Local model</span></li>
+          <li><span>Northern leaf blight</span><span class="tag unavailable">Not available</span></li>
+          <li><span>Non-corn verification</span><span class="tag unavailable">Local model only</span></li>
+        </ul>
+        <div class="no-diagnosis"><strong>No predicted class or confidence is shown on this page.</strong> Image classification is not lesion localization or disease-severity estimation.</div>
+      </aside>
+    </div>
+
+    <footer class="footer">
+      <p>Image processing stays in this browser tab. The demo does not transmit or save selected images.</p>
+      <p>For real model inference on your computer, use <code>streamlit run app.py</code> from the project environment.</p>
+    </footer>
+  </main>
+
+  <script>
+    "use strict";
+
+    const fileInput = document.getElementById("image-file");
+    const preview = document.getElementById("preview");
+    const previewWrap = document.getElementById("preview-wrap");
+    const filename = document.getElementById("filename");
+    const metrics = document.getElementById("metrics");
+    const warningsList = document.getElementById("warnings");
+    const qualityGood = document.getElementById("quality-good");
+    let currentObjectUrl = null;
+
+    function setMetric(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function measureImage(image) {
+      const scale = Math.min(1, 1000 / Math.max(image.naturalWidth, image.naturalHeight));
+      const width = Math.max(1, Math.round(image.naturalWidth * scale));
+      const height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      context.drawImage(image, 0, 0, width, height);
+      const pixels = context.getImageData(0, 0, width, height).data;
+      const gray = new Float32Array(width * height);
+      let brightness = 0;
+      let clipping = 0;
+
+      for (let pixel = 0, offset = 0; pixel < gray.length; pixel++, offset += 4) {
+        const value = 0.299 * pixels[offset] + 0.587 * pixels[offset + 1] + 0.114 * pixels[offset + 2];
+        gray[pixel] = value;
+        brightness += value;
+        if (value <= 5 || value >= 250) clipping++;
+      }
+
+      const mean = brightness / gray.length;
+      let variance = 0;
+      for (const value of gray) variance += (value - mean) ** 2;
+      const contrast = Math.sqrt(variance / gray.length);
+
+      let laplacianMean = 0;
+      let laplacianSquareMean = 0;
+      let laplacianCount = 0;
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          const index = y * width + x;
+          const laplacian = gray[index - width] + gray[index - 1] - 4 * gray[index] + gray[index + 1] + gray[index + width];
+          laplacianMean += laplacian;
+          laplacianSquareMean += laplacian * laplacian;
+          laplacianCount++;
+        }
+      }
+      const blurScore = laplacianCount
+        ? Math.max(0, laplacianSquareMean / laplacianCount - (laplacianMean / laplacianCount) ** 2)
+        : 0;
+
+      const warnings = [];
+      if (mean < 45) warnings.push("The image is very dark; leaf details may be difficult to assess.");
+      else if (mean > 210) warnings.push("The image is very bright; some leaf details may be washed out.");
+      if (contrast < 25) warnings.push("The image has low grayscale contrast.");
+      if (blurScore < 80) warnings.push("The image may be blurry (low approximate Laplacian variance).");
+      if (clipping / gray.length > 0.15) warnings.push("Many pixels are near black or clipped white.");
+      if (image.naturalWidth < 224 || image.naturalHeight < 224) warnings.push("Image resolution is below 224 pixels on at least one side.");
+
+      setMetric("dimensions", `${image.naturalWidth} × ${image.naturalHeight}`);
+      setMetric("brightness", `${mean.toFixed(1)} / 255`);
+      setMetric("contrast", contrast.toFixed(1));
+      setMetric("blur", blurScore.toFixed(1));
+      setMetric("clipping", `${(100 * clipping / gray.length).toFixed(1)}%`);
+
+      warningsList.replaceChildren();
+      for (const message of warnings) {
+        const item = document.createElement("li");
+        item.textContent = message;
+        warningsList.append(item);
+      }
+      warningsList.hidden = warnings.length === 0;
+      qualityGood.hidden = warnings.length !== 0;
+      metrics.hidden = false;
+    }
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        window.alert("Choose a JPG, PNG, or WEBP image.");
+        fileInput.value = "";
+        return;
+      }
+      if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = URL.createObjectURL(file);
+      preview.onload = () => {
+        previewWrap.hidden = false;
+        filename.textContent = file.name;
+        try {
+          measureImage(preview);
+        } catch (error) {
+          warningsList.replaceChildren();
+          const item = document.createElement("li");
+          item.textContent = `Could not analyze this image: ${error.message}`;
+          warningsList.append(item);
+          warningsList.hidden = false;
+          metrics.hidden = true;
+          qualityGood.hidden = true;
+        }
+      };
+      preview.onerror = () => {
+        previewWrap.hidden = true;
+        metrics.hidden = true;
+        window.alert("The selected file could not be decoded as an image.");
+      };
+      preview.src = currentObjectUrl;
+    });
+
+    window.addEventListener("pagehide", () => {
+      if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+    });
+  </script>
+</body>
+</html>
